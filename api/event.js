@@ -11,8 +11,7 @@ const app = express();
 app.post("/", async (req, res, next) => {
   try {
     const userId = "60c73a81b70d263164ffdec9";
-    const { date, location, firstPersonDetails, secondPersonDetails } =
-      req.body;
+    const { date, location, firstPersonDetails, secondPersonDetails } = req.body;
 
     const firstPerson = new Person(firstPersonDetails);
     const secondPerson = new Person(secondPersonDetails);
@@ -99,9 +98,7 @@ app.delete("/:eventId", async (req, res, next) => {
     await Person.findByIdAndDelete(event.secondPerson);
 
     if (guestsIds) {
-      guestsIds.forEach(
-        async (guestId) => await Guest.findByIdAndDelete(guestId)
-      );
+      guestsIds.forEach(async (guestId) => await Guest.findByIdAndDelete(guestId));
     }
 
     res.sendStatus(200);

@@ -9,6 +9,13 @@ module.exports = () => {
   server.use(express.urlencoded({ extended: true }));
   server.use(express.json());
 
+  server.use(function (req, res, next) {
+    //CORS support middleware
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+  });
+
   server.use("/api/auth", require("./api/auth"));
   server.use("/api/event", require("./api/event"));
   server.use("/api/guest", require("./api/guest"));
