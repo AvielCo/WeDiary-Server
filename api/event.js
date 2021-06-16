@@ -2,7 +2,6 @@ const express = require("express");
 const createError = require("http-errors");
 const User = require("../models/user.model");
 const Event = require("../models/event.model");
-const Person = require("../models/person.model");
 const Guest = require("../models/guest.model");
 const app = express();
 
@@ -11,13 +10,8 @@ const app = express();
 app.post("/", async (req, res, next) => {
   try {
     const userId = "60c73a81b70d263164ffdec9";
-    const { date, location, firstPersonDetails, secondPersonDetails } = req.body;
-
-    const firstPerson = new Person(firstPersonDetails);
-    const secondPerson = new Person(secondPersonDetails);
-    await firstPerson.save();
-    await secondPerson.save();
-
+    const { date, location, firstPerson, secondPerson } = req.body;
+    console.log(req.body);
     const event = new Event({ date, location, firstPerson, secondPerson });
     await event.save();
 
@@ -92,10 +86,6 @@ app.delete("/:eventId", async (req, res, next) => {
     const event = await Event.findByIdAndDelete(eventId);
 
     const guestsIds = event.guests;
-
-    // remove both people but dont wait for the operation to finish
-    await Person.findByIdAndDelete(event.firstPerson);
-    await Person.findByIdAndDelete(event.secondPerson);
 
     if (guestsIds) {
       guestsIds.forEach(async (guestId) => await Guest.findByIdAndDelete(guestId));

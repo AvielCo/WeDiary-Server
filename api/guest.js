@@ -2,7 +2,6 @@ const express = require("express");
 const createError = require("http-errors");
 const User = require("../models/user.model");
 const Event = require("../models/event.model");
-const Person = require("../models/person.model");
 const Guest = require("../models/guest.model");
 const app = express();
 
@@ -22,7 +21,7 @@ app.post("/:eventId", async (req, res, next) => {
     const guest = new Guest({ name, howMany });
     await guest.save();
 
-    const event = await Event.findByIdAndUpdate(eventId, {
+    await Event.findByIdAndUpdate(eventId, {
       $push: { guests: guest },
     });
 

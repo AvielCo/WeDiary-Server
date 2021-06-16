@@ -10,8 +10,20 @@ const EventSchema = new Schema({
     type: String,
     require: true,
   },
-  firstPerson: { type: Schema.Types.ObjectId, ref: "person", require: true },
-  secondPerson: { type: Schema.Types.ObjectId, ref: "person", require: true },
+  firstPerson: {
+    type: {
+      name: String,
+      gender: String,
+    },
+    require: true,
+  },
+  secondPerson: {
+    type: {
+      name: String,
+      gender: String,
+    },
+    require: true,
+  },
   guests: [{ type: Schema.Types.ObjectId, ref: "guest" }],
 });
 
