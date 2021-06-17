@@ -11,6 +11,7 @@ const GuestSchema = new Schema({
     require: true,
   },
   howMuch: Number,
+  comment: String,
 });
 
 module.exports = mongoose.model("guest", GuestSchema);

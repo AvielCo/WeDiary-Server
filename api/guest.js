@@ -12,13 +12,13 @@ app.post("/:eventId", async (req, res, next) => {
     const userId = "60c73a81b70d263164ffdec9";
     const user = await User.findById(userId);
     const { eventId } = req.params;
-    const { name, howMany } = req.body;
+    const { name, howMany, comment } = req.body;
 
     if (!user.events.includes(eventId)) {
       return next(createError.BadRequest());
     }
 
-    const guest = new Guest({ name, howMany });
+    const guest = new Guest({ name, howMany, comment });
     await guest.save();
 
     await Event.findByIdAndUpdate(eventId, {
