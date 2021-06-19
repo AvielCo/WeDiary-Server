@@ -5,11 +5,17 @@ const Event = require("../models/event.model");
 const Guest = require("../models/guest.model");
 const app = express();
 
+const { authenticateAccessToken, authenticateRefreshToken } = require("../middlewares");
+
+// Use auth access token middleware in every route in this file.
+app.use(authenticateAccessToken);
+app.use(authenticateRefreshToken);
+
 //** POST */
 
 app.post("/", async (req, res, next) => {
   try {
-    const userId = "60c73a81b70d263164ffdec9";
+    const userId = req.user.id;
     const { date, location, firstPerson, secondPerson } = req.body;
     console.log(req.body);
     const event = new Event({ date, location, firstPerson, secondPerson });
@@ -27,7 +33,7 @@ app.post("/", async (req, res, next) => {
 
 app.get("/all", async (req, res, next) => {
   try {
-    const userId = "60c73a81b70d263164ffdec9";
+    const userId = req.user.id;
     const user = await User.findById(userId);
     const eventsIds = user.events;
     const events = [];
@@ -47,7 +53,7 @@ app.get("/all", async (req, res, next) => {
 
 app.get("/:eventId", async (req, res, next) => {
   try {
-    const userId = "60c73a81b70d263164ffdec9";
+    const userId = req.user.id;
     const user = await User.findById(userId);
     const { eventId } = req.params;
 
@@ -66,6 +72,7 @@ app.get("/:eventId", async (req, res, next) => {
 
 app.put("/", (req, res, next) => {
   try {
+    const userId = req.user.id;
   } catch (err) {
     next(err);
   }
@@ -75,7 +82,7 @@ app.put("/", (req, res, next) => {
 
 app.delete("/:eventId", async (req, res, next) => {
   try {
-    const userId = "60c73a81b70d263164ffdec9";
+    const userId = req.user.id;
     const user = await User.findById(userId);
     const { eventId } = req.params;
     if (!user.events.includes(eventId)) {

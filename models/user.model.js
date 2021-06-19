@@ -12,6 +12,7 @@ const UserSchema = new Schema({
   password: {
     type: String,
     require: true,
+    select: false,
   },
   events: [{ type: Schema.Types.ObjectId, ref: "event", require: false }],
 });

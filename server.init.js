@@ -1,5 +1,7 @@
 const express = require("express");
 const morgan = require("morgan");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
 require("./mongoose");
 module.exports = () => {
   const server = express();
@@ -8,15 +10,13 @@ module.exports = () => {
   server.use(morgan("dev"));
   server.use(express.urlencoded({ extended: true }));
   server.use(express.json());
-
-  server.use(function (req, res, next) {
-    //CORS support middleware
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    res.header("Access-Control-Allow-Methods", "PUT, POST, GET, DELETE, OPTIONS");
-
-    next();
-  });
+  server.use(cookieParser());
+  server.use(
+    cors({
+      credentials: true,
+      origin: ["http://localhost:4200", "http://localhost:4000"],
+    })
+  );
 
   server.use("/api/auth", require("./api/auth"));
   server.use("/api/event", require("./api/event"));

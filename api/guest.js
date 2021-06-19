@@ -5,20 +5,26 @@ const Event = require("../models/event.model");
 const Guest = require("../models/guest.model");
 const app = express();
 
+const { authenticateAccessToken, authenticateRefreshToken } = require("../middlewares");
+
+// Use auth access token middleware in every route in this file.
+app.use(authenticateAccessToken);
+app.use(authenticateRefreshToken);
+
 //** POST */
 
 app.post("/:eventId", async (req, res, next) => {
   try {
-    const userId = "60c73a81b70d263164ffdec9";
+    const userId = req.user.id;
     const user = await User.findById(userId);
     const { eventId } = req.params;
-    const { name, howMany, comment } = req.body;
+    const { name, howMany, comment, howMuch } = req.body;
 
     if (!user.events.includes(eventId)) {
       return next(createError.BadRequest());
     }
 
-    const guest = new Guest({ name, howMany, comment });
+    const guest = new Guest({ name, howMany, comment, howMuch });
     await guest.save();
 
     await Event.findByIdAndUpdate(eventId, {
@@ -35,7 +41,7 @@ app.post("/:eventId", async (req, res, next) => {
 
 app.get("/all/:eventId", async (req, res, next) => {
   try {
-    const userId = "60c73a81b70d263164ffdec9";
+    const userId = req.user.id;
     const user = await User.findById(userId);
     const { eventId } = req.params;
 
@@ -63,7 +69,7 @@ app.get("/all/:eventId", async (req, res, next) => {
 
 app.get("/:eventId/:guestId", async (req, res, next) => {
   try {
-    const userId = "60c73a81b70d263164ffdec9";
+    const userId = req.user.id;
     const user = await User.findById(userId);
     const { eventId, guestId } = req.params;
 
@@ -89,7 +95,7 @@ app.get("/:eventId/:guestId", async (req, res, next) => {
 
 app.put("/:eventId/:guestId", async (req, res, next) => {
   try {
-    const userId = "60c73a81b70d263164ffdec9";
+    const userId = req.user.id;
     const user = await User.findById(userId);
     const { eventId, guestId } = req.params;
 
@@ -115,7 +121,7 @@ app.put("/:eventId/:guestId", async (req, res, next) => {
 
 app.delete("/:eventId/:guestId", async (req, res, next) => {
   try {
-    const userId = "60c73a81b70d263164ffdec9";
+    const userId = req.user.id;
     const user = await User.findById(userId);
     const { eventId, guestId } = req.params;
 

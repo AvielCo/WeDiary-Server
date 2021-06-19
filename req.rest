@@ -1,0 +1,18 @@
+POST http://localhost:8080/api/auth/login HTTP/1.1
+content-type: application/json
+
+{"email": "avielcohen15@gmail.com",
+ "password": "123456"}
+
+###
+
+POST http://localhost:8080/api/auth/register HTTP/1.1
+content-type: application/json
+
+{"email": "avielcohen15@gmai.com",
+ "password": "123456"}
+
+###
+
+GET http://localhost:8080/api/event/all HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYwY2Q5ZmFhODg3MzNmNDM1NDdhMTBiNSIsImlhdCI6MTYyNDA4OTc1MH0._WcktZ-ZorTwUe6diDC6_0WNHWdCoZrmkIAgQCoRuGo
