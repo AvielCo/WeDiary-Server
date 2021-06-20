@@ -5,7 +5,7 @@ const Event = require("../models/event.model");
 const Guest = require("../models/guest.model");
 const app = express();
 
-const { authenticateAccessToken, authenticateRefreshToken } = require("../middlewares");
+const { authenticateAccessToken, authenticateRefreshToken } = require("../core/middlewares");
 
 // Use auth access token middleware in every route in this file.
 app.use(authenticateAccessToken);

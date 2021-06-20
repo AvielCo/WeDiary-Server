@@ -2,7 +2,8 @@ require("dotenv").config();
 
 const createError = require("http-errors");
 const jwt = require("jsonwebtoken");
-const { decrypt, encrypt } = require("./helpers");
+const redis = require("./redis");
+const { decrypt, createNewTokens } = require("./helpers");
 
 function authenticateAccessToken(req, res, next) {
   const { accessToken } = req.cookies;
@@ -39,16 +40,22 @@ function authenticateRefreshToken(req, res, next) {
     if (err) {
       return next(createError.Forbidden());
     }
-    const accessToken = jwt.sign({ id: user.id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "5m" });
-    const encryptedAccessToken = encrypt(accessToken);
 
-    res.cookie("accessToken", encryptedAccessToken, {
-      httpOnly: true,
-      maxAge: 5 * 60 * 1000, // 5 minutes
+    redis.GET(user.id, (err, reply) => {
+      if (err) {
+        return next(err);
+      }
+
+      if (refreshToken !== reply) {
+        redis.DEL(user.id);
+        return next(createError.Unauthorized());
+      }
+
+      createNewTokens(user.id, res);
+
+      req.user = user;
+      next();
     });
-
-    req.user = user;
-    next();
   });
 }
 

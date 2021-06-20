@@ -2,7 +2,8 @@ const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-require("./mongoose");
+const redis = require("./core/redis");
+require("./core/mongoose");
 module.exports = () => {
   const server = express();
 
@@ -30,6 +31,10 @@ module.exports = () => {
 
   server.use((err, req, res, next) => {
     res.status(err.status || 500);
+    if (res.statusCode === 401) {
+      res.clearCookie("accessToken");
+      res.clearCookie("refreshToken");
+    }
     res.send({
       error: {
         status: err.status || 500,

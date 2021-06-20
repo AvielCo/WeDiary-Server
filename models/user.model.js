@@ -2,12 +2,13 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const Schema = mongoose.Schema;
 
-const UserSchema = new Schema({
+const schema = new Schema({
   email: {
     type: String,
     require: true,
     lowercase: true,
     unique: true,
+    trim: true,
   },
   password: {
     type: String,
@@ -17,7 +18,7 @@ const UserSchema = new Schema({
   events: [{ type: Schema.Types.ObjectId, ref: "event", require: false }],
 });
 
-UserSchema.pre("save", async function (next) {
+schema.pre("save", async function (next) {
   try {
     const salt = await bcrypt.genSalt(8);
     const hashedPassword = await bcrypt.hash(this.password, salt);
@@ -28,4 +29,4 @@ UserSchema.pre("save", async function (next) {
   }
 });
 
-module.exports = mongoose.model("user", UserSchema);
+module.exports = mongoose.model("user", schema);
