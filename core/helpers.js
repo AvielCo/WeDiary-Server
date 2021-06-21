@@ -21,30 +21,21 @@ const decrypt = (hash) => {
   return decrpyted.toString();
 };
 
-const createNewTokens = (userId, res, req, next) => {
+const createNewTokens = (userId) => {
   const accessToken = jwt.sign({ id: userId }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "5m" });
   const refreshToken = jwt.sign({ id: userId }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
 
   const encryptedAccessToken = encrypt(accessToken);
   const encryptedRefreshToken = encrypt(refreshToken);
 
-  redis.SET(userId.toString(), encryptedRefreshToken, "PX", week, (err) => {
-    if (err) {
-      return next(err);
-    }
-  });
-
-  res.cookie("refreshToken", encryptedRefreshToken, {
-    httpOnly: true,
-    secure: true,
-    maxAge: week, // 7 days
-  });
-
-  res.cookie("accessToken", encryptedAccessToken, {
-    httpOnly: true,
-    secure: true,
-    maxAge: five_minutes, // 5 minutes
-  });
+  return new Promise((resolve, reject) =>
+    redis.SET(userId.toString(), encryptedRefreshToken, "PX", week, (err) => {
+      if (err) {
+        reject();
+      }
+      resolve({ accessToken: encryptedAccessToken, refreshToken: encryptedRefreshToken });
+    })
+  );
 };
 
 module.exports = { encrypt, decrypt, createNewTokens };

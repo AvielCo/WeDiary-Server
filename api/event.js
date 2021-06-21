@@ -5,11 +5,10 @@ const Event = require("../models/event.model");
 const Guest = require("../models/guest.model");
 const app = express();
 
-const { authenticateAccessToken, authenticateRefreshToken } = require("../core/middlewares");
+const { verifyTokens } = require("../core/middlewares");
 
 // Use auth access token middleware in every route in this file.
-app.use(authenticateAccessToken);
-app.use(authenticateRefreshToken);
+app.use(verifyTokens);
 
 //** POST */
 
@@ -17,13 +16,12 @@ app.post("/", async (req, res, next) => {
   try {
     const userId = req.user.id;
     const { date, location, firstPerson, secondPerson } = req.body;
-    console.log(req.body);
     const event = new Event({ date, location, firstPerson, secondPerson });
     await event.save();
 
     await User.findByIdAndUpdate(userId, { $push: { events: event } });
 
-    res.sendStatus(200);
+    res.status(200).json({ accessToken: req.newAccessToken });
   } catch (err) {
     next(err);
   }
@@ -45,7 +43,7 @@ app.get("/all", async (req, res, next) => {
       );
     });
     await Promise.all(promises); // wait for promises to finish
-    res.status(200).send(events);
+    res.status(200).json({ accessToken: req.newAccessToken, events });
   } catch (err) {
     next(err);
   }
@@ -62,7 +60,7 @@ app.get("/:eventId", async (req, res, next) => {
     }
     const event = await Event.findById(eventId);
 
-    res.status(200).send(event);
+    res.status(200).json({ accessToken: req.newAccessToken, event });
   } catch (err) {
     next(err);
   }
@@ -73,6 +71,7 @@ app.get("/:eventId", async (req, res, next) => {
 app.put("/", (req, res, next) => {
   try {
     const userId = req.user.id;
+    res.status(200).json({ accessToken: req.newAccessToken });
   } catch (err) {
     next(err);
   }
@@ -98,7 +97,7 @@ app.delete("/:eventId", async (req, res, next) => {
       guestsIds.forEach(async (guestId) => await Guest.findByIdAndDelete(guestId));
     }
 
-    res.sendStatus(200);
+    res.status(200).json({ accessToken: req.newAccessToken });
   } catch (err) {
     next(err);
   }

@@ -31,10 +31,10 @@ module.exports = () => {
 
   server.use((err, req, res, next) => {
     res.status(err.status || 500);
-    if (res.statusCode === 401) {
-      res.clearCookie("accessToken");
-      res.clearCookie("refreshToken");
-    }
+    // if (res.statusCode === 401) {
+    //   res.clearCookie("accessToken");
+    //   res.clearCookie("refreshToken");
+    // }
     res.send({
       error: {
         status: err.status || 500,

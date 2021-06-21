@@ -5,11 +5,10 @@ const Event = require("../models/event.model");
 const Guest = require("../models/guest.model");
 const app = express();
 
-const { authenticateAccessToken, authenticateRefreshToken } = require("../core/middlewares");
+const { verifyTokens } = require("../core/middlewares");
 
 // Use auth access token middleware in every route in this file.
-app.use(authenticateAccessToken);
-app.use(authenticateRefreshToken);
+app.use(verifyTokens);
 
 //** POST */
 
@@ -31,7 +30,7 @@ app.post("/:eventId", async (req, res, next) => {
       $push: { guests: guest },
     });
 
-    res.sendStatus(200);
+    res.status(200).json({ accessToken: req.newAccessToken });
   } catch (err) {
     next(err);
   }
@@ -61,7 +60,7 @@ app.get("/all/:eventId", async (req, res, next) => {
       );
     });
     await Promise.all(promises); // wait for promises to finish
-    res.status(200).send(guests);
+    res.status(200).json({ accessToken: req.newAccessToken, guests });
   } catch (err) {
     next(err);
   }
@@ -85,7 +84,7 @@ app.get("/:eventId/:guestId", async (req, res, next) => {
 
     const guest = await Guest.findById(guestId);
 
-    res.status(200).send(guest);
+    res.status(200).json({ accessToken: req.newAccessToken, guest });
   } catch (err) {
     next(err);
   }
@@ -111,7 +110,7 @@ app.put("/:eventId/:guestId", async (req, res, next) => {
 
     await Guest.findByIdAndUpdate(guestId, req.body, { omitUndefined: true });
 
-    res.sendStatus(200);
+    res.status(200).json({ accessToken: req.newAccessToken });
   } catch (err) {
     next(err);
   }
@@ -139,7 +138,7 @@ app.delete("/:eventId/:guestId", async (req, res, next) => {
     await event.save();
     await Guest.findByIdAndDelete(guestId);
 
-    res.sendStatus(200);
+    res.status(200).json({ accessToken: req.newAccessToken });
   } catch (err) {
     next(err);
   }

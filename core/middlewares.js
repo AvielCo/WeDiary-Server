@@ -4,59 +4,78 @@ const createError = require("http-errors");
 const jwt = require("jsonwebtoken");
 const redis = require("./redis");
 const { decrypt, createNewTokens } = require("./helpers");
+const { week } = require("./consts");
 
-function authenticateAccessToken(req, res, next) {
-  const { accessToken } = req.cookies;
-
-  if (!accessToken) {
-    return next();
-  }
-
+function authenticateAccessToken(req, accessToken) {
   const decryptedAccessToken = decrypt(accessToken);
-
-  jwt.verify(decryptedAccessToken, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
-    if (err) {
-      return next(createError.Forbidden());
-    }
+  try {
+    const user = jwt.verify(decryptedAccessToken, process.env.ACCESS_TOKEN_SECRET);
     req.user = user;
-    next();
-  });
+  } catch (err) {
+    return false;
+  }
+  return true;
 }
 
-function authenticateRefreshToken(req, res, next) {
-  const { refreshToken, accessToken } = req.cookies;
-
-  if (accessToken) {
-    return next();
-  }
+async function authenticateRefreshToken(req, res, next) {
+  const { refreshToken } = req.cookies;
 
   if (!refreshToken) {
-    return next(createError.Unauthorized());
+    return false;
   }
 
-  const decryptedRefreshToken = decrypt(refreshToken);
+  let user;
+  try {
+    user = jwt.verify(decrypt(refreshToken), process.env.REFRESH_TOKEN_SECRET);
+  } catch (err) {
+    return false;
+  }
 
-  jwt.verify(decryptedRefreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
-    if (err) {
-      return next(createError.Forbidden());
-    }
-
-    redis.GET(user.id, (err, reply) => {
-      if (err) {
-        return next(err);
+  return new Promise((resolve, reject) =>
+    redis.GET(user.id, async (err, reply) => {
+      if (err || !reply) {
+        reject(createError.InternalServerError());
       }
 
-      if (refreshToken !== reply) {
-        redis.DEL(user.id);
-        return next(createError.Unauthorized());
+      if (refreshToken != reply) {
+        reject(createError.Unauthorized());
       }
 
-      createNewTokens(user.id, res);
+      const { accessToken: newAccessToken, refreshToken: newRefreshToken } = await createNewTokens(user.id, res);
+      if (!newAccessToken || !newRefreshToken) {
+        reject(createError.InternalServerError());
+      }
+
+      res.cookie("refreshToken", newRefreshToken, {
+        httpOnly: true,
+        secure: true,
+        maxAge: week,
+      });
 
       req.user = user;
-      next();
-    });
-  });
+      req.newAccessToken = newAccessToken;
+      resolve(true);
+    })
+  );
 }
 
-module.exports = { authenticateAccessToken, authenticateRefreshToken };
+async function verifyTokens(req, res, next) {
+  const accessToken = req.headers["authorization"].split(" ")[1];
+  let isAccessTokenValid = false;
+  let isRefreshTokenValid = false;
+  if (accessToken) {
+    isAccessTokenValid = authenticateAccessToken(req, accessToken);
+  }
+  if (!isAccessTokenValid || !accessToken) {
+    try {
+      isRefreshTokenValid = await authenticateRefreshToken(req, res, next);
+    } catch (err) {
+      return next(err);
+    }
+  }
+  if (isRefreshTokenValid || isAccessTokenValid) {
+    next();
+  }
+}
+
+module.exports = { verifyTokens };

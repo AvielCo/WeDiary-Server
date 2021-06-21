@@ -6,7 +6,9 @@ const userValidation = require("../validation/user.validation");
 const createError = require("http-errors");
 const bcrypt = require("bcrypt");
 const { createNewTokens } = require("../core/helpers");
+const { verifyTokens } = require("../core/middlewares");
 const redis = require("../core/redis");
+const { week } = require("../core/consts");
 const app = express();
 
 app.post("/register", async (req, res, next) => {
@@ -48,25 +50,55 @@ app.post("/login", async (req, res, next) => {
     if (!matchedPassword) {
       return next(createError(401, "Incorrect email or password."));
     }
+    let tokens;
+    try {
+      tokens = await createNewTokens(user._id, res, req, next);
+    } catch (err) {
+      return next(createError.InternalServerError());
+    }
 
-    createNewTokens(user._id, res, req, next);
+    res.cookie("refreshToken", tokens.refreshToken, {
+      httpOnly: true,
+      secure: true,
+      maxAge: week, // 7 days
+    });
 
+    res.status(200).json({ accessToken: tokens.accessToken });
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
+});
+
+app.post("/validate-tokens", verifyTokens, async (req, res, next) => {
+  try {
     res.sendStatus(200);
   } catch (err) {
     next(err);
   }
 });
 
-app.delete("/logout", async (req, res, next) => {
+app.get("/", verifyTokens, async (req, res, next) => {
+  try {
+    res.sendStatus(200);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete("/logout", verifyTokens, async (req, res, next) => {
   try {
     const userId = req.user.id;
+    res.clearCookie("refreshToken");
+
     redis.DEL(userId, (error) => {
       if (error) {
         console.error(`[REDIS] user logout error: ${error}`);
         return next(error);
       }
     });
-    res.sendStatus(200);
+
+    res.sendStatus(204);
   } catch (err) {
     next(err);
   }
