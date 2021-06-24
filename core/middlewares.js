@@ -19,31 +19,29 @@ function authenticateAccessToken(req, accessToken) {
 
 async function authenticateRefreshToken(req, res, next) {
   const { refreshToken } = req.cookies;
+  return new Promise((resolve, reject) => {
+    if (!refreshToken) {
+      return reject(createError.Forbidden());
+    }
+    let user;
+    try {
+      user = jwt.verify(decrypt(refreshToken), process.env.REFRESH_TOKEN_SECRET);
+    } catch (err) {
+      return reject(createError.Unauthorized());
+    }
 
-  if (!refreshToken) {
-    return false;
-  }
-
-  let user;
-  try {
-    user = jwt.verify(decrypt(refreshToken), process.env.REFRESH_TOKEN_SECRET);
-  } catch (err) {
-    return false;
-  }
-
-  return new Promise((resolve, reject) =>
     redis.GET(user.id, async (err, reply) => {
       if (err || !reply) {
-        reject(createError.InternalServerError());
+        return reject(createError.InternalServerError());
       }
 
       if (refreshToken != reply) {
-        reject(createError.Unauthorized());
+        return reject(createError.Unauthorized());
       }
 
       const { accessToken: newAccessToken, refreshToken: newRefreshToken } = await createNewTokens(user.id, res);
       if (!newAccessToken || !newRefreshToken) {
-        reject(createError.InternalServerError());
+        return reject(createError.InternalServerError());
       }
 
       res.cookie("refreshToken", newRefreshToken, {
@@ -55,16 +53,20 @@ async function authenticateRefreshToken(req, res, next) {
       req.user = user;
       req.newAccessToken = newAccessToken;
       resolve(true);
-    })
-  );
+    });
+  });
 }
 
 async function verifyTokens(req, res, next) {
-  const accessToken = req.headers["authorization"].split(" ")[1];
   let isAccessTokenValid = false;
   let isRefreshTokenValid = false;
-  if (accessToken) {
-    isAccessTokenValid = authenticateAccessToken(req, accessToken);
+  let accessToken = "";
+  const { authorization } = req.headers;
+  if (authorization) {
+    accessToken = authorization.split(" ")[1];
+    if (accessToken) {
+      isAccessTokenValid = authenticateAccessToken(req, accessToken);
+    }
   }
   if (!isAccessTokenValid || !accessToken) {
     try {

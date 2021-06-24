@@ -72,7 +72,7 @@ app.get("/:eventId", async (req, res, next) => {
 
 //** PUT (UPDATE) */
 
-app.put("/", (req, res, next) => {
+app.put("/", async (req, res, next) => {
   try {
     await eventValidation.validateAsync(req.body);
     const userId = req.user.id;

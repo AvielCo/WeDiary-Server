@@ -3,6 +3,7 @@ const createError = require("http-errors");
 const User = require("../models/user.model");
 const Event = require("../models/event.model");
 const Guest = require("../models/guest.model");
+const guestValidation = require("../validation/guest.validation");
 const app = express();
 
 const { verifyTokens } = require("../core/middlewares");
@@ -18,6 +19,8 @@ app.post("/:eventId", async (req, res, next) => {
     const user = await User.findById(userId);
     const { eventId } = req.params;
     const { name, howMany, comment, howMuch } = req.body;
+
+    await guestValidation.validateAsync({ name, howMany, howMuch, comment });
 
     if (!user.events.includes(eventId)) {
       return next(createError.BadRequest());
@@ -97,6 +100,8 @@ app.put("/:eventId/:guestId", async (req, res, next) => {
     const userId = req.user.id;
     const user = await User.findById(userId);
     const { eventId, guestId } = req.params;
+
+    await guestValidation.validateAsync(req.body);
 
     if (!user.events.includes(eventId)) {
       return next(createError.BadRequest());
