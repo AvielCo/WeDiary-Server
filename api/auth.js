@@ -14,16 +14,17 @@ const app = express();
 app.post("/register", async (req, res, next) => {
   try {
     const { email, password } = req.body;
+
     if (!email || !password) {
       throw createError.BadRequest();
     }
+
+    await userValidation.validateAsync({ email, password });
 
     const userExists = await User.findOne({ email });
     if (userExists) {
       return next(createError.Conflict("Email already exists."));
     }
-
-    await userValidation.validateAsync({ email, password });
 
     const newUser = new User({ email, password });
     const savedUser = await newUser.save();
@@ -40,16 +41,22 @@ app.post("/register", async (req, res, next) => {
 app.post("/login", async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password) {
+      return next(createError.BadRequest());
+    }
+
+    await userValidation.validateAsync({ email, password });
 
     const user = await User.findOne({ email }).select("+password");
     if (!user) {
-      return next(createError(401, "Incorrect email or password."));
+      return next(createError.Unauthorized());
     }
 
     const matchedPassword = await bcrypt.compare(password, user.password);
     if (!matchedPassword) {
-      return next(createError(401, "Incorrect email or password."));
+      return next(createError.Unauthorized());
     }
+
     let tokens;
     try {
       tokens = await createNewTokens(user._id, res, req, next);
@@ -71,14 +78,6 @@ app.post("/login", async (req, res, next) => {
 });
 
 app.post("/validate-tokens", verifyTokens, async (req, res, next) => {
-  try {
-    res.sendStatus(200);
-  } catch (err) {
-    next(err);
-  }
-});
-
-app.get("/", verifyTokens, async (req, res, next) => {
   try {
     res.sendStatus(200);
   } catch (err) {
